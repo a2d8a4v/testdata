@@ -237,9 +237,11 @@ def main():
     # else:
     #     # Downloading and loading the swag dataset from the hub.
     #     datasets = load_dataset("swag", "regular")
+    # data_files = {}
+    # data_files["train"] = data_args.train_file
+    # data_files["validation"] = data_args.validation_file
+    # datasets = load_dataset( "csv" , data_files=data_files )
     datasets = load_dataset( "csv" , data_files=dic_save + "train.csv" )
-    # with open( dic_save + 'train.csv' , newline='' ) as csvfile:
-    #     datasets = csv.reader( csvfile , delimiter=',' )
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
@@ -323,7 +325,8 @@ def main():
         model=model,
         args=training_args,
         train_dataset=tokenized_datasets["train"] if training_args.do_train else None,
-        eval_dataset=tokenized_datasets["validation"] if training_args.do_eval else None,
+        # eval_dataset=tokenized_datasets["validation"] if training_args.do_eval else None,
+        eval_dataset=None,
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
