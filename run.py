@@ -370,7 +370,7 @@ def main():
         print("An exception occurred: test data error")
 
     # Initialize our Trainer
-    trainer = d(
+    trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=tokenized_datasets["train"] if training_args.do_train else None,
