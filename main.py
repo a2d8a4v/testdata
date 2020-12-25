@@ -73,7 +73,7 @@ if __name__  == "__main__":
                     docs_dict[ row[0] ] =  " ".join( re.sub( r'\W+' , ' ' , string[1] ).replace( "\n" , " " ).split() )
     pickleStore( docs_dict , dic_save + "docs_dict.pkl" )
 
-    # make first sentence
+    # make train data
     queries_dict = {}
     que_pos_dict = {}
     que_top_dict = {}
@@ -84,22 +84,45 @@ if __name__  == "__main__":
                 queries_dict[ row[0] ] = " ".join( re.sub( r'\W+' , ' ' , row[1] ).split() )
                 que_pos_dict[ row[0] ] = row[2]
                 que_top_dict[ row[0] ] = dict( zip( row[3].split() , row[4].split() ) )
-    pickleStore( queries_dict , dic_save + "queries_dict.pkl" )
-    pickleStore( que_pos_dict , dic_save + "que_pos_dict.pkl" )
-    pickleStore( que_top_dict , dic_save + "que_top_dict.pkl" )
-
-    # make first sentence
+    pickleStore( queries_dict , dic_save + "train_queries_dict.pkl" )
+    pickleStore( que_pos_dict , dic_save + "train_que_pos_dict.pkl" )
+    pickleStore( que_top_dict , dic_save + "train_que_top_dict.pkl" )
     tmp = 0
-    # first_sentences = [ [ context ] * 4 for context in dataset ]
     for query_name , query_content in queries_dict.items():
         with open( dic_save + "train.csv" , "a" ) as writefile:
             if tmp == 0:
-                writefile.write( "query_name,query_content,positive,negative,label\n" )
+                writefile.write( "query_name,query_content,answer,label\n" )
                 tmp += 1
             positive_list = que_pos_dict[ query_name ].split()
             for i in range( len( positive_list ) ):
                 positive = positive_list[ i ]
-                negative = " ".join( random.choices( [ x for x in que_top_dict[ query_name ].keys() if x not in que_pos_dict[ query_name ].split() ] , k=3 ) )
-                append = ",".join( [ query_name , query_content , positive , negative , str(1) ] )
+                # negative = " ".join( random.choices( [ x for x in que_top_dict[ query_name ].keys() if x not in que_pos_dict[ query_name ].split() ] , k=3 ) )
+                negative = random.choices( [ x for x in que_top_dict[ query_name ].keys() if x not in que_pos_dict[ query_name ].split() ] , k=3 )
+                # print( len( que_pos_dict[ query_name ].split() ) , len( [ x for x in que_top_dict[ query_name ].keys() if x not in que_pos_dict[ query_name ].split() ] ) )
+                random_l = [ positive ] + negative
+                random.shuffle( random_l )
+                index_el = random_l.index( positive )
+                random_l = " ".join( random_l )
+                append = ",".join( [ query_name , query_content , random_l , str( index_el ) ] )
                 writefile.write( append + "\n" )
+
+    # make test data
+    queries_dict = {}
+    que_top_dict = {}
+    with open( dic_sources + 'test_queries.csv' , newline='' ) as csvfile:
+        spamreader = csv.reader( csvfile , delimiter=',' )
+        for c , row in enumerate( spamreader ):
+            if c > 0:
+                queries_dict[ row[0] ] = " ".join( re.sub( r'\W+' , ' ' , row[1] ).split() )
+                que_top_dict[ row[0] ] = dict( zip( row[2].split() , row[3].split() ) )
+    pickleStore( queries_dict , dic_save + "test_queries_dict.pkl" )
+    pickleStore( que_top_dict , dic_save + "test_que_top_dict.pkl" )
+    tmp = 0
+    for query_name , query_content in queries_dict.items():
+        with open( dic_save + "test.csv" , "a" ) as writefile:
+            if tmp == 0:
+                writefile.write( "query_name,query_content,top1000\n" )
+                tmp += 1
+            append = ",".join( [ query_name , query_content , " ".join( que_top_dict[ query_name ].keys() ) ] )
+            writefile.write( append + "\n" )
 
