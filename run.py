@@ -226,6 +226,8 @@ def main():
 
     # In distributed training, the load_dataset function guarantee that only one local process can concurrently
     # download the dataset.
+    print("File: ",data_args.train_file)
+    print("File: ",data_args.validation_file)
     if data_args.train_file is not None or data_args.validation_file is not None:
         data_files = {}
         if data_args.train_file is not None:
