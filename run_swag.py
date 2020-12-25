@@ -300,6 +300,7 @@ def main():
             max_length=data_args.max_seq_length,
             padding="max_length" if data_args.pad_to_max_length else False,
         )
+        print(tokenized_examples)
         # Un-flatten
         return {k: [v[i : i + 4] for i in range(0, len(v), 4)] for k, v in tokenized_examples.items()}
 
