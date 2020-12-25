@@ -10,29 +10,6 @@ from tqdm import tqdm
 from datasets import load_dataset
 
 
-# ending_names = [ f"ending{i}" for i in range(4) ]
-
-# context_name = "doc_id"
-# question_header_name = "doc_text"
-
-# documents = load_dataset('csv', data_files=prefix + "documents.csv" )
-# print(documents)
-# dataset = documents['train']
-# print(dataset[:1])
-
-# first_sentences = [[context] * 4 for context in dataset]
-# question_headers = dataset[question_header_name]
-# second_sentences = [
-#     [f"{header} {dataset[end][i]}" for end in ending_names] for i, header in enumerate(question_headers)
-# ]
-
-# # Flatten out
-# first_sentences = sum(first_sentences, [])
-# second_sentences = sum(second_sentences, [])
-
-# print( first_sentences )
-
-
 def pickleStore( savethings , filename ):
     dbfile = open( filename , 'wb' )
     pickle.dump( savethings , dbfile )
@@ -89,7 +66,7 @@ if __name__  == "__main__":
     pickleStore( que_top_dict , dic_save + "train_que_top_dict.pkl" )
     tmp = 0
     for query_name , query_content in queries_dict.items():
-        with open( dic_save + "train.csv" , "a" ) as writefile:
+        with open( dic_save + "all.csv" , "a" ) as writefile:
             if tmp == 0:
                 writefile.write( "query_name,query_content,answer,label\n" )
                 tmp += 1
@@ -105,6 +82,27 @@ if __name__  == "__main__":
                 random_l = " ".join( random_l )
                 append = ",".join( [ query_name , query_content , random_l , str( index_el ) ] )
                 writefile.write( append + "\n" )
+
+    datasets = load_dataset( "csv" , data_files=dic_save + "all.csv" )
+    datasets = datasets['train'].train_test_split( test_size=0.1 , shuffle=True ) 
+    tmp = 0
+    for row in datasets['train']:
+        with open( dic_save + "train.csv" , "a" ) as writefile:
+            if tmp == 0:
+                writefile.write( "query_name,query_content,answer,label\n" )
+                tmp += 1
+            append = ",".join( [ str(x) for x in row.values() ] )
+            writefile.write( append + "\n" )
+
+    tmp = 0
+    for row in datasets['test']:
+        with open( dic_save + "validation.csv" , "a" ) as writefile:
+            if tmp == 0:
+                writefile.write( "query_name,query_content,answer,label\n" )
+                tmp += 1
+            append = ",".join( [ str(x) for x in row.values() ] )
+            writefile.write( append + "\n" )
+
 
     # make test data
     queries_dict = {}
