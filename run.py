@@ -226,23 +226,23 @@ def main():
 
     # In distributed training, the load_dataset function guarantee that only one local process can concurrently
     # download the dataset.
-    # if data_args.train_file is not None or data_args.validation_file is not None:
-    #     data_files = {}
-    #     if data_args.train_file is not None:
-    #         data_files["train"] = data_args.train_file
-    #     if data_args.validation_file is not None:
-    #         data_files["validation"] = data_args.validation_file
-    #     extension = data_args.train_file.split(".")[-1]
-    #     datasets = load_dataset(extension, data_files=data_files)
-    # else:
-    #     # Downloading and loading the swag dataset from the hub.
-    #     datasets = load_dataset("swag", "regular")
-    data_files = {}
-    datasets = load_dataset( "csv" , data_files=dic_save + "train.csv" )
-    datasets = datasets['train'].train_test_split( test_size=0.1 , shuffle=True )
-    data_files["train"] = datasets["train"]
-    data_files["validation"] = datasets["test"]
-    datasets = load_dataset( "csv" , data_files=data_files )
+    if data_args.train_file is not None or data_args.validation_file is not None:
+        data_files = {}
+        if data_args.train_file is not None:
+            data_files["train"] = data_args.train_file
+        if data_args.validation_file is not None:
+            data_files["validation"] = data_args.validation_file
+        extension = data_args.train_file.split(".")[-1]
+        datasets = load_dataset(extension, data_files=data_files)
+    else:
+        # Downloading and loading the swag dataset from the hub.
+        datasets = load_dataset("swag", "regular")
+    # data_files = {}
+    # datasets = load_dataset( "csv" , data_files=dic_save + "train.csv" )
+    # datasets = datasets['train'].train_test_split( test_size=0.1 , shuffle=True )
+    # data_files["train"] = datasets["train"]
+    # data_files["validation"] = datasets["test"]
+    # datasets = load_dataset( "csv" , data_files=data_files )
     # datasets = load_dataset( "csv" , data_files=dic_save + "train.csv" )
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
