@@ -237,11 +237,13 @@ def main():
     # else:
     #     # Downloading and loading the swag dataset from the hub.
     #     datasets = load_dataset("swag", "regular")
-    # data_files = {}
-    # data_files["train"] = data_args.train_file
-    # data_files["validation"] = data_args.validation_file
-    # datasets = load_dataset( "csv" , data_files=data_files )
+    data_files = {}
     datasets = load_dataset( "csv" , data_files=dic_save + "train.csv" )
+    datasets = datasets['train'].train_test_split( test_size=0.1 , shuffle=True )
+    data_files["train"] = datasets["train"]
+    data_files["validation"] = datasets["test"]
+    datasets = load_dataset( "csv" , data_files=data_files )
+    # datasets = load_dataset( "csv" , data_files=dic_save + "train.csv" )
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
@@ -272,7 +274,11 @@ def main():
         file_to_read = open( filename , "rb" )
         p = pickle.load( file_to_read )
         return p
-
+    def pickleStore( savethings , filename ):
+        dbfile = open( filename , 'wb' )
+        pickle.dump( savethings , dbfile )
+        dbfile.close()
+        return
 
     # Preprocessing the datasets.
     def preprocess_function( data ):
@@ -280,13 +286,11 @@ def main():
         docs_dict = pikleOpen( dic_save + "docs_dict.pkl" )
         first_sentences = [ [ query_content ] * 4 for query_content in data['query_content'] ]
         second_sentences = []
-        # print( "example lenssssssssss {}".format( len( data ) ) )
 
-        for tup in zip( data[ 'query_content' ] , data[ 'positive' ] , data[ 'negative' ] ):
-            second_sentences.append( [ f"{tup[0]} {docs_dict[ tup[1] ]}" ] )
-            negative_list = tup[2].split()
-            for neg_doc_name in negative_list:
-                second_sentences.append( [ f"{tup[0]} {docs_dict[ neg_doc_name ]}" ] )
+        for tup in zip( data[ 'query_content' ] , data[ 'answer' ] ):
+            pn_list = tup[1].split()
+            for doc_name in pn_list:
+                second_sentences.append( [ f"{tup[0]} {docs_dict[ doc_name ]}" ] )
 
         # Flatten out
         first_sentences = sum(first_sentences, [])
@@ -300,12 +304,46 @@ def main():
             max_length=data_args.max_seq_length,
             padding="max_length" if data_args.pad_to_max_length else False,
         )
-        print(tokenized_examples)
         # Un-flatten
         return {k: [v[i : i + 4] for i in range(0, len(v), 4)] for k, v in tokenized_examples.items()}
 
     tokenized_datasets = datasets.map(
         preprocess_function,
+        batched=True,
+        num_proc=data_args.preprocessing_num_workers,
+        load_from_cache_file=not data_args.overwrite_cache,
+    )
+
+    # Preprocessing the test datasets.
+    testdata = load_dataset( "csv" , data_files=dic_save + "test.csv" )
+    def test_preprocess_function( data ):
+
+        docs_dict = pikleOpen( dic_save + "docs_dict.pkl" )
+        first_sentences = [ [ query_content ] * 1000 for query_content in data['query_content'] ]
+        second_sentences = []
+
+        for tup in zip( data[ 'query_content' ] , data[ 'top1000' ] ):
+            pn_list = tup[1].split()
+            for doc_name in pn_list:
+                second_sentences.append( [ f"{tup[0]} {docs_dict[ doc_name ]}" ] )
+
+        # Flatten out
+        first_sentences = sum(first_sentences, [])
+        second_sentences = sum(second_sentences, [])
+
+        # Tokenize
+        tokenized_examples = tokenizer(
+            first_sentences,
+            second_sentences,
+            truncation=True,
+            max_length=data_args.max_seq_length,
+            padding="max_length" if data_args.pad_to_max_length else False,
+        )
+        # Un-flatten
+        return {k: [v[i : i + 4] for i in range(0, len(v), 4)] for k, v in tokenized_examples.items()}
+
+    tokenized_test_datasets = testdata.map(
+        test_preprocess_function,
         batched=True,
         num_proc=data_args.preprocessing_num_workers,
         load_from_cache_file=not data_args.overwrite_cache,
@@ -323,12 +361,11 @@ def main():
         return {"accuracy": (preds == label_ids).astype(np.float32).mean().item()}
 
     # Initialize our Trainer
-    trainer = Trainer(
+    trainer = d(
         model=model,
         args=training_args,
         train_dataset=tokenized_datasets["train"] if training_args.do_train else None,
-        # eval_dataset=tokenized_datasets["validation"] if training_args.do_eval else None,
-        eval_dataset=None,
+        eval_dataset=tokenized_datasets["validation"] if training_args.do_eval else None,
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
@@ -353,20 +390,37 @@ def main():
             # Need to save the state, since Trainer.save_model saves only the tokenizer with the model
             trainer.state.save_to_json(os.path.join(training_args.output_dir, "trainer_state.json"))
 
+    # Save Trainer Foreahead
+    try:
+        pickleStore( trainer , dic_save + "trainer.pkl" )
+    except:
+        print("An exception occurred: Save train model error")
+
     # Evaluation
-    results = {}
-    if training_args.do_eval:
-        logger.info("*** Evaluate ***")
+    try:
+        results = {}
+        if training_args.do_eval:
+            logger.info("*** Evaluate ***")
 
-        results = trainer.evaluate()
+            results = trainer.evaluate()
 
-        output_eval_file = os.path.join(training_args.output_dir, "eval_results_swag.txt")
-        if trainer.is_world_process_zero():
-            with open(output_eval_file, "w") as writer:
-                logger.info("***** Eval results *****")
-                for key, value in sorted(results.items()):
-                    logger.info(f"  {key} = {value}")
-                    writer.write(f"{key} = {value}\n")
+            output_eval_file = os.path.join(training_args.output_dir, "eval_results_swag.txt")
+            if trainer.is_world_process_zero():
+                with open(output_eval_file, "w") as writer:
+                    logger.info("***** Eval results *****")
+                    for key, value in sorted(results.items()):
+                        logger.info(f"  {key} = {value}")
+                        writer.write(f"{key} = {value}\n")    
+    except:
+        print("An exception occurred: Evaluation error")
+
+    # Test
+    try:
+        logger.info("*** Predict Test dataset ***")
+        test_result = trainer.predict( test_dataset=tokenized_test_datasets["train"] )
+        pickleStore( test_result , dic_save + "test_result.pkl" )
+    except:
+        print("An exception occurred: Predict error")
 
     return results
 
