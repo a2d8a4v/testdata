@@ -100,6 +100,6 @@ if __name__  == "__main__":
             for i in range( len( positive_list ) ):
                 positive = positive_list[ i ]
                 negative = " ".join( random.choices( [ x for x in que_top_dict[ query_name ].keys() if x not in que_pos_dict[ query_name ].split() ] , k=3 ) )
-                append = ",".join( [ query_name , query_content , positive , negative , str(0) ] )
+                append = ",".join( [ query_name , query_content , positive , negative , str(1) ] )
                 writefile.write( append + "\n" )
 
