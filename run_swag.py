@@ -250,6 +250,7 @@ def main():
     # Distributed training:
     # The .from_pretrained methods guarantee that only one local process can concurrently
     # download model & vocab.
+    torch.cuda.empty_cache()
     config = AutoConfig.from_pretrained(
         model_args.config_name if model_args.config_name else model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,
@@ -332,6 +333,7 @@ def main():
         compute_metrics=compute_metrics,
     )
 
+    torch.cuda.empty_cache()
     # Training
     if training_args.do_train:
         train_result = trainer.train(
