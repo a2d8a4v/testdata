@@ -271,11 +271,12 @@ def main():
         cache_dir=model_args.cache_dir,
     )
 
-    # When using your own dataset or a different dataset from swag, you will probably need to change this.
+    # pikle functions
     def pikleOpen( filename ):
         file_to_read = open( filename , "rb" )
         p = pickle.load( file_to_read )
         return p
+
     def pickleStore( savethings , filename ):
         dbfile = open( filename , 'wb' )
         pickle.dump( savethings , dbfile )
@@ -283,6 +284,7 @@ def main():
         return
 
     # Preprocessing the datasets.
+    print( "Preprocessing Train data" )
     def preprocess_function( data ):
 
         docs_dict = pikleOpen( dic_save + "docs_dict.pkl" )
@@ -309,14 +311,8 @@ def main():
         # Un-flatten
         return {k: [v[i : i + 4] for i in range(0, len(v), 4)] for k, v in tokenized_examples.items()}
 
-    tokenized_datasets = datasets.map(
-        preprocess_function,
-        batched=True,
-        num_proc=data_args.preprocessing_num_workers,
-        load_from_cache_file=not data_args.overwrite_cache,
-    )
-
     # Preprocessing the test datasets.
+    print( "Preprocessing Test data" )
     testdata = load_dataset( "csv" , data_files=dic_save + "test.csv" )
     def test_preprocess_function( data ):
 
@@ -344,13 +340,6 @@ def main():
         # Un-flatten
         return {k: [v[i : i + 4] for i in range(0, len(v), 4)] for k, v in tokenized_examples.items()}
 
-    tokenized_test_datasets = testdata.map(
-        test_preprocess_function,
-        batched=True,
-        num_proc=data_args.preprocessing_num_workers,
-        load_from_cache_file=not data_args.overwrite_cache,
-    )
-
     # Data collator
     data_collator = (
         default_data_collator if data_args.pad_to_max_length else DataCollatorForMultipleChoice(tokenizer=tokenizer)
@@ -361,6 +350,24 @@ def main():
         predictions, label_ids = eval_predictions
         preds = np.argmax(predictions, axis=1)
         return {"accuracy": (preds == label_ids).astype(np.float32).mean().item()}
+
+    # Data tokenized
+    tokenized_datasets = datasets.map(
+        preprocess_function,
+        batched=True,
+        num_proc=data_args.preprocessing_num_workers,
+        load_from_cache_file=not data_args.overwrite_cache,
+    )
+
+    try:
+        tokenized_test_datasets = testdata.map(
+            test_preprocess_function,
+            batched=True,
+            num_proc=data_args.preprocessing_num_workers,
+            load_from_cache_file=not data_args.overwrite_cache,
+        )
+    except:
+        print("An exception occurred: test data error")
 
     # Initialize our Trainer
     trainer = d(
