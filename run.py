@@ -171,41 +171,6 @@ class DataCollatorForMultipleChoice:
         return batch
 
 
-def test_preprocess_function( data ):
-
-    docs_dict = pikleOpen( dic_save + "docs_dict.pkl" )
-    first_sentences  = [ [ query_content ] * 1000 for query_content in data[ 'query_content' ] ]
-    second_sentences = []
-
-    print("AA")
-    for tup in zip( data[ 'query_content' ] , data[ 'top1000' ] ):
-        pn_list = tup[1].split()
-        for doc_name in pn_list:
-            a = docs_dict[ doc_name ] if doc_name in docs_dict.keys() and docs_dict[ doc_name ] is not None else " None "
-            second_sentences.append( [ f"{tup[0]} {a}" ] )
-
-    print("BB")
-    # Flatten out
-    first_sentences = sum(first_sentences, [])
-    second_sentences = sum(second_sentences, [])
-    print( "first_sentences: {}".format( len( first_sentences ) ) )
-    print( "second_sentences: {}".format( len( second_sentences ) ) )
-
-    print("CC")
-    # Tokenize
-    tokenized_examples = tokenizer(
-        first_sentences,
-        second_sentences,
-        truncation=True, 
-        max_length=data_args.max_seq_length,
-        padding="max_length" if data_args.pad_to_max_length else False,
-    )
-
-    print("DD")
-    # Un-flatten
-    return {k: [v[i : i + 1000] for i in range(0, len(v), 1000)] for k, v in tokenized_examples.items()}
-
-
 def main():
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
@@ -344,6 +309,41 @@ def main():
         )
         # Un-flatten
         return {k: [v[i : i + 4] for i in range(0, len(v), 4)] for k, v in tokenized_examples.items()}
+
+    def test_preprocess_function( data ):
+
+        docs_dict = pikleOpen( dic_save + "docs_dict.pkl" )
+        first_sentences  = [ [ query_content ] * 1000 for query_content in data[ 'query_content' ] ]
+        second_sentences = []
+
+        print("AA")
+        for tup in zip( data[ 'query_content' ] , data[ 'top1000' ] ):
+            pn_list = tup[1].split()
+            for doc_name in pn_list:
+                a = docs_dict[ doc_name ] if doc_name in docs_dict.keys() and docs_dict[ doc_name ] is not None else " None "
+                second_sentences.append( [ f"{tup[0]} {a}" ] )
+
+        print("BB")
+        # Flatten out
+        first_sentences = sum(first_sentences, [])
+        second_sentences = sum(second_sentences, [])
+        print( "first_sentences: {}".format( len( first_sentences ) ) )
+        print( "second_sentences: {}".format( len( second_sentences ) ) )
+
+        print("CC")
+        # Tokenize
+        tokenized_examples = tokenizer(
+            first_sentences,
+            second_sentences,
+            truncation=True, 
+            max_length=data_args.max_seq_length,
+            padding="max_length" if data_args.pad_to_max_length else False,
+        )
+
+        print("DD")
+        # Un-flatten
+        return {k: [v[i : i + 1000] for i in range(0, len(v), 1000)] for k, v in tokenized_examples.items()}
+
 
     # Data collator
     data_collator = (
