@@ -310,10 +310,11 @@ def main():
         # Un-flatten
         return {k: [v[i : i + 4] for i in range(0, len(v), 4)] for k, v in tokenized_examples.items()}
 
+
     def test_preprocess_function( data ):
 
         docs_dict = pikleOpen( dic_save + "docs_dict.pkl" )
-        first_sentences  = [ [ query_content ] * 1000 for query_content in data[ 'query_content' ] ]
+        first_sentences  = [ [ query_content ] * 4 for query_content in data[ 'query_content' ] ]
         second_sentences = []
 
         print("AA")
@@ -342,7 +343,7 @@ def main():
 
         print("DD")
         # Un-flatten
-        return {k: [v[i : i + 1000] for i in range(0, len(v), 1000)] for k, v in tokenized_examples.items()}
+        return {k: [v[i : i + 4] for i in range(0, len(v), 4)] for k, v in tokenized_examples.items()}
 
 
     # Data collator
@@ -416,7 +417,6 @@ def main():
     try:
         pickleStore( trainer , dic_save + "trainer.pkl" )
     except:
-        print("")
         logger.info("*** An exception occurred: Save train model error ***")
 
     # Evaluation
