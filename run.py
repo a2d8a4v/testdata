@@ -323,7 +323,6 @@ def main():
         print("AA")
         for tup in zip( data[ 'query_content' ] , data[ 'top1000' ] ):
             pn_list = tup[1].split()
-            print( pn_list )
             for doc_name in pn_list:
                 a = docs_dict[ doc_name ] if doc_name in docs_dict.keys() and docs_dict[ doc_name ] is not None else " None "
                 second_sentences.append( [ f"{tup[0]} {a}" ] )
@@ -332,6 +331,8 @@ def main():
         # Flatten out
         first_sentences = sum(first_sentences, [])
         second_sentences = sum(second_sentences, [])
+        print( "first_sentences: {}".format( len( first_sentences ) ) )
+        print( "second_sentences: {}".format( len( second_sentences ) ) )
 
         print("CC")
         # Tokenize
@@ -342,6 +343,8 @@ def main():
             max_length=data_args.max_seq_length,
             padding="max_length" if data_args.pad_to_max_length else False,
         )
+
+        print("DD")
         # Un-flatten
         return {k: [v[i : i + 4] for i in range(0, len(v), 4)] for k, v in tokenized_examples.items()}
 
