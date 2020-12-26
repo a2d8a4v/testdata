@@ -2,7 +2,7 @@
 # coding: utf-8
 
 ## import modules
-import glob , os , re , random , sys
+import glob , os , re , random , sys , math
 import pickle , csv
 import numpy as np
 import collections
@@ -21,6 +21,19 @@ def pikleOpen( filename ):
     file_to_read = open( filename , "rb" )
     p = pickle.load( file_to_read )
     return p
+
+
+def shuffleCutList( big_lists ):
+    new = []
+    times = math.ceil( len( big_lists ) / 4 )
+    for t in range( times ):
+        if len( big_lists ) >= 4:
+            tmp_l = random.choices( big_lists , k=4 )
+        else:
+            tmp_l = big_lists
+        new.append( tmp_l )
+        big_lists = [ x for x in big_lists if x not in tmp_l ]
+    return new
 
 
 if __name__  == "__main__":
@@ -121,6 +134,9 @@ if __name__  == "__main__":
             if tmp == 0:
                 writefile.write( "query_name,query_content,top1000\n" )
                 tmp += 1
-            append = ",".join( [ query_name , query_content , " ".join( que_top_dict[ query_name ].keys() ) ] )
-            writefile.write( append + "\n" )
+            docs_list = list( que_top_dict[ query_name ].keys() )
+            doc4_list = shuffleCutList( docs_list )
+            for x in doc4_list:
+                append = ",".join( [ query_name , query_content , " ".join( x ) ] )
+                writefile.write( append + "\n" )
 
