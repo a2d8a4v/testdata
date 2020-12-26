@@ -120,6 +120,7 @@ if __name__  == "__main__":
     # make test data
     queries_dict = {}
     que_top_dict = {}
+    que_all_list = []
     with open( dic_sources + 'test_queries.csv' , newline='' ) as csvfile:
         spamreader = csv.reader( csvfile , delimiter=',' )
         for c , row in enumerate( spamreader ):
@@ -128,15 +129,13 @@ if __name__  == "__main__":
                 que_top_dict[ row[0] ] = dict( zip( row[2].split() , row[3].split() ) )
     pickleStore( queries_dict , dic_save + "test_queries_dict.pkl" )
     pickleStore( que_top_dict , dic_save + "test_que_top_dict.pkl" )
-    tmp = 0
     for query_name , query_content in queries_dict.items():
-        with open( dic_save + "test.csv" , "a" ) as writefile:
-            if tmp == 0:
-                writefile.write( "query_name,query_content,top1000\n" )
-                tmp += 1
-            docs_list = list( que_top_dict[ query_name ].keys() )
-            doc4_list = shuffleCutList( docs_list )
-            for x in doc4_list:
-                append = ",".join( [ query_name , query_content , " ".join( x ) ] )
-                writefile.write( append + "\n" )
-
+        docs_list = list( que_top_dict[ query_name ].keys() )
+        doc4_list = shuffleCutList( docs_list )
+        for x in doc4_list:
+            que_all_list.append( ",".join( [ query_name , query_content , " ".join( x ) ] ) )
+    random.shuffle( que_all_list )
+    with open( dic_save + "test.csv" , "a" ) as writefile:
+        writefile.write( "query_name,query_content,top1000\n" )
+        for row in que_all_list:
+            writefile.write( row + "\n" )
