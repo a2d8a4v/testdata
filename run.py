@@ -203,7 +203,7 @@ def test_preprocess_function( data ):
 
     print("DD")
     # Un-flatten
-    return {k: [v[i : i + 4] for i in range(0, len(v), 4)] for k, v in tokenized_examples.items()}
+    return {k: [v[i : i + 1000] for i in range(0, len(v), 1000)] for k, v in tokenized_examples.items()}
 
 
 def main():
@@ -319,7 +319,6 @@ def main():
         return
 
     # Preprocessing the datasets.
-    logger.info("*** Preprocessing Train data ***")
     def preprocess_function( data ):
 
         docs_dict = pikleOpen( dic_save + "docs_dict.pkl" )
@@ -346,10 +345,6 @@ def main():
         # Un-flatten
         return {k: [v[i : i + 4] for i in range(0, len(v), 4)] for k, v in tokenized_examples.items()}
 
-    # Preprocessing the test datasets.
-    logger.info("*** Preprocessing Test data ***")
-    testdata = load_dataset( "csv" , data_files=dic_save + "test.csv" )
-
     # Data collator
     data_collator = (
         default_data_collator if data_args.pad_to_max_length else DataCollatorForMultipleChoice(tokenizer=tokenizer)
@@ -362,6 +357,7 @@ def main():
         return {"accuracy": (preds == label_ids).astype(np.float32).mean().item()}
 
     # Data tokenized
+    logger.info("*** Preprocessing Train data ***")
     tokenized_datasets = datasets.map(
         preprocess_function,
         batched=True,
@@ -369,6 +365,9 @@ def main():
         load_from_cache_file=not data_args.overwrite_cache,
     )
 
+    # Preprocessing the test datasets.
+    logger.info("*** Preprocessing Test data ***")
+    testdata = load_dataset( "csv" , data_files=dic_save + "test.csv" )
     try:
         tokenized_test_datasets = testdata.map(
             test_preprocess_function,
