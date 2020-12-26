@@ -284,7 +284,7 @@ def main():
         return
 
     # Preprocessing the datasets.
-    print( "Preprocessing Train data" )
+    logger.info("*** Preprocessing Train data ***")
     def preprocess_function( data ):
 
         docs_dict = pikleOpen( dic_save + "docs_dict.pkl" )
@@ -312,28 +312,33 @@ def main():
         return {k: [v[i : i + 4] for i in range(0, len(v), 4)] for k, v in tokenized_examples.items()}
 
     # Preprocessing the test datasets.
-    print( "Preprocessing Test data" )
+    logger.info("*** Preprocessing Test data ***")
     testdata = load_dataset( "csv" , data_files=dic_save + "test.csv" )
     def test_preprocess_function( data ):
 
         docs_dict = pikleOpen( dic_save + "docs_dict.pkl" )
-        first_sentences = [ [ query_content ] * 1000 for query_content in data['query_content'] ]
+        first_sentences  = [ [ query_content ] * 1000 for query_content in data[ 'query_content' ] ]
         second_sentences = []
 
+        print("AA")
         for tup in zip( data[ 'query_content' ] , data[ 'top1000' ] ):
             pn_list = tup[1].split()
+            print( pn_list )
             for doc_name in pn_list:
-                second_sentences.append( [ f"{tup[0]} {docs_dict[ doc_name ]}" ] )
+                a = docs_dict[ doc_name ] if doc_name in docs_dict.keys() and docs_dict[ doc_name ] is not None else " None "
+                second_sentences.append( [ f"{tup[0]} {a}" ] )
 
+        print("BB")
         # Flatten out
         first_sentences = sum(first_sentences, [])
         second_sentences = sum(second_sentences, [])
 
+        print("CC")
         # Tokenize
         tokenized_examples = tokenizer(
             first_sentences,
             second_sentences,
-            truncation=True,
+            truncation=True, 
             max_length=data_args.max_seq_length,
             padding="max_length" if data_args.pad_to_max_length else False,
         )
@@ -367,7 +372,7 @@ def main():
             load_from_cache_file=not data_args.overwrite_cache,
         )
     except:
-        print("An exception occurred: test data error")
+        logger.info("*** An exception occurred: test data error ***")
 
     # Initialize our Trainer
     trainer = Trainer(
@@ -403,11 +408,12 @@ def main():
     try:
         pickleStore( trainer , dic_save + "trainer.pkl" )
     except:
-        print("An exception occurred: Save train model error")
+        print("")
+        logger.info("*** An exception occurred: Save train model error ***")
 
     # Evaluation
+    results = {}
     try:
-        results = {}
         if training_args.do_eval:
             logger.info("*** Evaluate ***")
 
@@ -421,7 +427,7 @@ def main():
                         logger.info(f"  {key} = {value}")
                         writer.write(f"{key} = {value}\n")    
     except:
-        print("An exception occurred: Evaluation error")
+        logger.info("*** An exception occurred: Evaluation error ***")
 
     # Test
     try:
@@ -429,7 +435,7 @@ def main():
         test_result = trainer.predict( test_dataset=tokenized_test_datasets["train"] )
         pickleStore( test_result , dic_save + "test_result.pkl" )
     except:
-        print("An exception occurred: Predict error")
+        logger.info("*** An exception occurred: Predict error ***")
 
     return results
 
