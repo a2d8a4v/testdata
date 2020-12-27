@@ -36,6 +36,11 @@ def shuffleCutList( big_lists ):
     return new
 
 
+def softmax( vector ):
+	e = np.exp( vector )
+	return e / e.sum()
+
+
 if __name__  == "__main__":
 
     ## settings
@@ -87,7 +92,11 @@ if __name__  == "__main__":
             for i in range( len( positive_list ) ):
                 positive = positive_list[ i ]
                 # negative = " ".join( random.choices( [ x for x in que_top_dict[ query_name ].keys() if x not in que_pos_dict[ query_name ].split() ] , k=3 ) )
-                negative = random.choices( [ x for x in que_top_dict[ query_name ].keys() if x not in que_pos_dict[ query_name ].split() ] , k=3 )
+                if len( que_top_dict[ query_name ].keys() ) // len( que_pos_dict[ query_name ].split() ) >= 10:
+                    temp = list( que_top_dict[ query_name ].keys() )[ len( que_top_dict[ query_name ].keys() ) // 2 :]
+                else:
+                    temp = que_top_dict[ query_name ].keys()
+                negative = random.choices( [ x for x in temp if x not in que_pos_dict[ query_name ].split() ] , k=3 )
                 # print( len( que_pos_dict[ query_name ].split() ) , len( [ x for x in que_top_dict[ query_name ].keys() if x not in que_pos_dict[ query_name ].split() ] ) )
                 random_l = [ positive ] + negative
                 random.shuffle( random_l )
@@ -97,7 +106,7 @@ if __name__  == "__main__":
                 writefile.write( append + "\n" )
 
     datasets = load_dataset( "csv" , data_files=dic_save + "all.csv" )
-    datasets = datasets['train'].train_test_split( test_size=0.1 , shuffle=True ) 
+    datasets = datasets['train'].train_test_split( test_size=0.05 , shuffle=True ) 
     tmp = 0
     for row in datasets['train']:
         with open( dic_save + "train.csv" , "a" ) as writefile:
@@ -126,7 +135,8 @@ if __name__  == "__main__":
         for c , row in enumerate( spamreader ):
             if c > 0:
                 queries_dict[ row[0] ] = " ".join( re.sub( r'\W+' , ' ' , row[1] ).split() )
-                que_top_dict[ row[0] ] = dict( zip( row[2].split() , row[3].split() ) )
+                softmax_score = softmax( np.array( row[3].split() , dtype=np.float64 ) ).tolist()
+                que_top_dict[ row[0] ] = dict( zip( row[2].split() , softmax_score ) )
     pickleStore( queries_dict , dic_save + "test_queries_dict.pkl" )
     pickleStore( que_top_dict , dic_save + "test_que_top_dict.pkl" )
     for query_name , query_content in queries_dict.items():
