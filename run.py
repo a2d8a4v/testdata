@@ -438,13 +438,45 @@ def main():
     try:
         logger.info("*** Predict Test dataset ***")
         trainer_test_result = trainer.predict( test_dataset=tokenized_test_datasets["train"] )
+        print( "trainer_test_result type: {}".format( type( trainer_test_result ) ) )
+        output_test_file = os.path.join( training_args.output_dir , "test_results_swag.txt" )
+        if trainer.is_world_process_zero():
+            with open(output_test_file, "w") as writer:
+                logger.info("***** Test results *****")
+                for key, value in sorted(trainer_test_result[2].items()):
+                    logger.info(f"  {key} = {value}")
+                    writer.write(f"{key} = {value}\n") 
     except:
         logger.info("*** An exception occurred: Predict error ***")
 
     try:
+        logger.info("*** Save Predict Test Result ***")
         pickleStore( trainer_test_result , dic_save + "trainer_test_result.pkl" )
     except:
         logger.info("*** An exception occurred: Save Predict error ***")
+
+    # calculate documents ranking for test
+    logger.info("*** Caculate Reranking Result ***")
+    save = {}
+    tmp  = {}
+    pre_result = trainer_test_result[0]
+    with open( dic_save + 'test.csv' , newline='' ) as csvfile:
+        spamreader = csv.reader( csvfile , delimiter=',' )
+        for c , row in enumerate( spamreader ):
+            if c > 0:
+                if row[0] not in save.keys():
+                    save[ row[0] ] = {}
+                for k , v in dict( zip( row[2].split() , pre_result[c][0] ) ):
+                    save[ row[0] ][ k ] = v
+        # sort
+        save = { query_name : dict( sorted( d_v.items(), key=lambda item: item[1] , reverse=True ) ) for query_name , d_v in save.items() }
+        # compute softmax
+        for query_name , d_v in save.items():
+            tmp[ query_name ] = softmax( np.array( list( save[ k ].values() ) , dtype=np.float64 ) ).tolist()
+        save = { query_name : dict( zip( list( save[ query_name ].keys() ) , tmp[ query_name ] ) ) for query_name in save.keys() }
+    print( save['301'] )
+
+
 
     return results
 
