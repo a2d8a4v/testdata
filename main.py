@@ -143,9 +143,9 @@ if __name__  == "__main__":
         docs_list = list( que_top_dict[ query_name ].keys() )
         doc4_list = shuffleCutList( docs_list )
         for x in doc4_list:
-            que_all_list.append( ",".join( [ query_name , query_content , " ".join( x ) ] ) )
+            que_all_list.append( ",".join( [ query_name , query_content , " ".join( x ) , str(0) ] ) )
     random.shuffle( que_all_list )
     with open( dic_save + "test.csv" , "a" ) as writefile:
-        writefile.write( "query_name,query_content,top1000\n" )
+        writefile.write( "query_name,query_content,top1000,label\n" )
         for row in que_all_list:
             writefile.write( row + "\n" )
