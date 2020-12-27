@@ -171,6 +171,8 @@ class DataCollatorForMultipleChoice:
         return batch
 
 
+
+
 def main():
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
@@ -326,8 +328,6 @@ def main():
         # Flatten out
         first_sentences = sum(first_sentences, [])
         second_sentences = sum(second_sentences, [])
-        print( "first_sentences: {}".format( len( first_sentences ) ) )
-        print( "second_sentences: {}".format( len( second_sentences ) ) )
 
         # Tokenize
         tokenized_examples = tokenizer(
@@ -368,7 +368,7 @@ def main():
     test_data_files = {}
     test_data_files["train"] = dic_save + "test.csv"
     testdata = load_dataset("csv", data_files=test_data_files)
-    # print(testdata['train'])
+
     try:
         tokenized_test_datasets = testdata.map(
             test_preprocess_function,
@@ -376,6 +376,7 @@ def main():
             num_proc=data_args.preprocessing_num_workers,
             load_from_cache_file=not data_args.overwrite_cache,
         )
+        print( tokenized_test_datasets["train"] )
     except:
         logger.info("*** An exception occurred: test data error ***")
 
@@ -437,9 +438,13 @@ def main():
     try:
         logger.info("*** Predict Test dataset ***")
         trainer_test_result = trainer.predict( test_dataset=tokenized_test_datasets["train"] )
-        pickleStore( trainer_test_result , dic_save + "trainer_test_result.pkl" )
     except:
         logger.info("*** An exception occurred: Predict error ***")
+
+    try:
+        pickleStore( trainer_test_result , dic_save + "trainer_test_result.pkl" )
+    except:
+        logger.info("*** An exception occurred: Save Predict error ***")
 
     return results
 
