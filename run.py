@@ -436,8 +436,8 @@ def main():
     # Test
     try:
         logger.info("*** Predict Test dataset ***")
-        test_result = trainer.predict( test_dataset=tokenized_test_datasets["train"] )
-        pickleStore( test_result , dic_save + "test_result.pkl" )
+        trainer_test_result = trainer.predict( test_dataset=tokenized_test_datasets["train"] )
+        pickleStore( trainer_test_result , dic_save + "trainer_test_result.pkl" )
     except:
         logger.info("*** An exception occurred: Predict error ***")
 
