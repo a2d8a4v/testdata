@@ -24,15 +24,8 @@ def pikleOpen( filename ):
 
 
 def shuffleCutList( big_lists ):
-    new = []
-    times = math.ceil( len( big_lists ) / 4 )
-    for t in range( times ):
-        if len( big_lists ) >= 4:
-            tmp_l = random.choices( big_lists , k=4 )
-        else:
-            tmp_l = big_lists
-        new.append( tmp_l )
-        big_lists = [ x for x in big_lists if x not in tmp_l ]
+    random.shuffle( big_lists )
+    new = [ big_lists[i:i+4] for i in range( 0 , len( big_lists ) , 4 ) ]
     return new
 
 
