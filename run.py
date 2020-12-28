@@ -239,17 +239,7 @@ def main():
         extension = data_args.train_file.split(".")[-1]
         datasets = load_dataset(extension, data_files=data_files)
     else:
-        # Downloading and loading the swag dataset from the hub.
         datasets = load_dataset("swag", "regular")
-    # data_files = {}
-    # datasets = load_dataset( "csv" , data_files=dic_save + "train.csv" )
-    # datasets = datasets['train'].train_test_split( test_size=0.1 , shuffle=True )
-    # data_files["train"] = datasets["train"]
-    # data_files["validation"] = datasets["test"]
-    # datasets = load_dataset( "csv" , data_files=data_files )
-    # datasets = load_dataset( "csv" , data_files=dic_save + "train.csv" )
-    # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
-    # https://huggingface.co/docs/datasets/loading_datasets.html.
 
     # Load pretrained model and tokenizer
 
@@ -364,12 +354,11 @@ def main():
 
     # Preprocessing the test datasets.
     logger.info("*** Preprocessing Test data ***")
-    # testdata = load_dataset( "csv" , data_files=dic_save + "test.csv" )
-    test_data_files = {}
-    test_data_files["train"] = dic_save + "test.csv"
-    testdata = load_dataset("csv", data_files=test_data_files)
-
     try:
+        test_data_files = {}
+        test_data_files["train"] = dic_save + "test.csv"
+        testdata = load_dataset("csv", data_files=test_data_files)
+        # testdata = load_dataset( "csv" , data_files=dic_save + "test.csv" )
         tokenized_test_datasets = testdata.map(
             test_preprocess_function,
             batched=True,
@@ -423,7 +412,7 @@ def main():
 
             results = trainer.evaluate()
 
-            output_eval_file = os.path.join(training_args.output_dir, "eval_results_swag.txt")
+            output_eval_file = os.path.join(training_args.output_dir, "eval_results.txt")
             if trainer.is_world_process_zero():
                 with open(output_eval_file, "w") as writer:
                     logger.info("***** Eval results *****")
@@ -438,7 +427,7 @@ def main():
         logger.info("*** Predict Test dataset ***")
         trainer_test_result = trainer.predict( test_dataset=tokenized_test_datasets["train"] )
         print( "trainer_test_result type: {}".format( type( trainer_test_result ) ) )
-        output_test_file = os.path.join( training_args.output_dir , "test_results_swag.txt" )
+        output_test_file = os.path.join( training_args.output_dir , "test_results.txt" )
         if trainer.is_world_process_zero():
             with open(output_test_file, "w") as writer:
                 logger.info("***** Test results *****")
@@ -459,13 +448,25 @@ def main():
     try:
         alphadata = load_dataset( "csv" , data_files=dic_save + "train_for_alpha_train.csv" )
         tokenized_alpha_datasets = alphadata.map(
-            test_preprocess_function,
+            preprocess_function,
             batched=True,
             num_proc=data_args.preprocessing_num_workers,
             load_from_cache_file=not data_args.overwrite_cache,
         )
     except:
-        logger.info("*** An exception occurred: Predict Alpha Data error ***")
+        logger.info("*** An exception occurred: Predict Alpha Data error first time, try again ***")
+        try:
+            alpha_data_files = {}
+            alpha_data_files["train"] = dic_save + "train_for_alpha_train.csv"
+            alphadata = load_dataset("csv", data_files=test_data_files)
+            tokenized_alpha_datasets = alphadata.map(
+                preprocess_function,
+                batched=True,
+                num_proc=data_args.preprocessing_num_workers,
+                load_from_cache_file=not data_args.overwrite_cache,
+            )
+        except:
+            logger.info("*** An exception occurred: Predict Alpha Data error 2 times ***")
 
     try:
         trainer_alpha_result = trainer.predict( test_dataset=tokenized_alpha_datasets["train"] )
