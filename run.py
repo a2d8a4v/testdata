@@ -274,7 +274,7 @@ def main():
     )
 
     # pikle functions
-    def pikleOpen( filename ):
+    def pickleOpen( filename ):
         file_to_read = open( filename , "rb" )
         p = pickle.load( file_to_read )
         return p
@@ -288,7 +288,7 @@ def main():
     # Preprocessing the datasets.
     def preprocess_function( data ):
 
-        docs_dict = pikleOpen( dic_save + "docs_dict.pkl" )
+        docs_dict = pickleOpen( dic_save + "docs_dict.pkl" )
         first_sentences = [ [ query_content ] * 4 for query_content in data['query_content'] ]
         second_sentences = []
 
@@ -315,7 +315,7 @@ def main():
 
     def test_preprocess_function( data ):
 
-        docs_dict = pikleOpen( dic_save + "docs_dict.pkl" )
+        docs_dict = pickleOpen( dic_save + "docs_dict.pkl" )
         first_sentences  = [ [ query_content ] * 4 for query_content in data[ 'query_content' ] ]
         second_sentences = []
 
@@ -459,24 +459,36 @@ def main():
     logger.info("*** Caculate Reranking Result ***")
     save = {}
     tmp  = {}
+    new  = {}
     pre_result = trainer_test_result[0]
     with open( dic_save + 'test.csv' , newline='' ) as csvfile:
         spamreader = csv.reader( csvfile , delimiter=',' )
+        next(spamreader)
         for c , row in enumerate( spamreader ):
-            if c > 0:
-                if row[0] not in save.keys():
-                    save[ row[0] ] = {}
-                for k , v in dict( zip( row[2].split() , pre_result[c][0] ) ):
-                    save[ row[0] ][ k ] = v
+            if row[0] not in save.keys():
+                save[ row[0] ] = {}
+            for tup in zip( row[2].split() , pre_result[c].tolist() ):
+                save[ row[0] ][ tup[0] ] = tup[1]
         # sort
         save = { query_name : dict( sorted( d_v.items(), key=lambda item: item[1] , reverse=True ) ) for query_name , d_v in save.items() }
         # compute softmax
         for query_name , d_v in save.items():
-            tmp[ query_name ] = softmax( np.array( list( save[ k ].values() ) , dtype=np.float64 ) ).tolist()
+            tmp[ query_name ] = softmax( np.array( list( save[ query_name ].values() ) , dtype=np.float64 ) ).tolist()
         save = { query_name : dict( zip( list( save[ query_name ].keys() ) , tmp[ query_name ] ) ) for query_name in save.keys() }
-    print( save['301'] )
+    
+    que_top_dict = pickleOpen( dic_save + "test_que_top_dict.pkl" )
+    for query_name , d_v in que_top_dict.items():
+        for doc_name , softmax_score in d_v.items():
+            # new[ query_name ][ doc_name ] = np.log2( save[ query_name ][ doc_name ] + softmax_score )
+            new[ query_name ][ doc_name ] = np.log2( save[ query_name ][ doc_name ] ) + 1.2 * np.log2( softmax_score )
+    pickleStore( new , dic_save + "test_ques_docs_reranking.pkl" )
 
-
+    with open( dic_save + "test_ques_docs_reranking.csv" , "a" ) as writefile:
+        writefile.write( "query_id,ranked_doc_ids\n" )
+        for query_name , d_v in new.items():
+            append = ",".join( [ str( query_name ) ] + sorted( d_v , key=d_v.get , reverse=True ) )
+            writefile.write( append + "\n" )
+    logger.info("*** Done! ***")
 
     return results
 
