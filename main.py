@@ -17,7 +17,7 @@ def pickleStore( savethings , filename ):
     return
 
 
-def pikleOpen( filename ):
+def pickleOpen( filename ):
     file_to_read = open( filename , "rb" )
     p = pickle.load( file_to_read )
     return p
@@ -128,8 +128,8 @@ if __name__  == "__main__":
         for c , row in enumerate( spamreader ):
             if c > 0:
                 queries_dict[ row[0] ] = " ".join( re.sub( r'\W+' , ' ' , row[1] ).split() )
-                softmax_score = softmax( np.array( row[3].split() , dtype=np.float64 ) ).tolist()
-                que_top_dict[ row[0] ] = dict( zip( row[2].split() , softmax_score ) )
+                softmax_score = softmax( np.array( row[3].split() , dtype=np.float64 ) )
+                que_top_dict[ row[0] ] = dict( zip( row[2].split() , softmax_score.tolist() ) )
     pickleStore( queries_dict , dic_save + "test_queries_dict.pkl" )
     pickleStore( que_top_dict , dic_save + "test_que_top_dict.pkl" )
     for query_name , query_content in queries_dict.items():
