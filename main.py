@@ -29,6 +29,18 @@ def shuffleCutList( big_lists ):
     return new
 
 
+def cleanRaw( raw_html ):
+    cleana = re.compile( r"(article)+\s(type)+\:(\w+)" , re.IGNORECASE )
+    cleanb = re.compile( r"<F P=105[^>]*>" )
+    cleanc = re.compile( r"<F P=106[^>]*>" )
+    cleand = re.compile( r"</F>" )
+    cleantext = re.sub(cleana, '', raw_html)
+    cleantext = re.sub(cleanb, '', cleantext)
+    cleantext = re.sub(cleanc, '', cleantext)
+    cleantext = re.sub(cleand, '', cleantext)
+    return cleantext
+
+
 def softmax( vector ):
 	e = np.exp( vector )
 	return e / e.sum()
@@ -54,11 +66,12 @@ if __name__  == "__main__":
         for c , row in enumerate( spamreader ):
             # get content without first line features name
             if c > 0:
-                string = row[1].split( "[Text]" )
-                if len( string ) == 1:
-                    docs_dict[ row[0] ] =  " ".join( re.sub( r'\W+' , ' ' , string[0] ).replace( "\n" , " " ).split() )
-                else:
-                    docs_dict[ row[0] ] =  " ".join( re.sub( r'\W+' , ' ' , string[1] ).replace( "\n" , " " ).split() )
+                # string = row[1].split( "[Text]" )
+                # if len( string ) == 1:
+                #     docs_dict[ row[0] ] =  " ".join( re.sub( r'\W+' , ' ' , string[0] ).replace( "\n" , " " ).split() )
+                # else:
+                #     docs_dict[ row[0] ] =  " ".join( re.sub( r'\W+' , ' ' , string[1] ).replace( "\n" , " " ).split() )
+                docs_dict[ row[0] ] =  " ".join( re.sub( r'\W+' , ' ' , cleanRaw( row[1] ) ).replace( "\n" , " " ).split() )
     pickleStore( docs_dict , dic_save + "docs_dict.pkl" )
 
     # make train data
@@ -99,7 +112,7 @@ if __name__  == "__main__":
                 writefile.write( append + "\n" )
 
     datasets = load_dataset( "csv" , data_files=dic_save + "all.csv" )
-    datasets = datasets['train'].train_test_split( test_size=0.05 , shuffle=True ) 
+    datasets = datasets['train'].train_test_split( test_size=0.04 , shuffle=True )
     tmp = 0
     for row in datasets['train']:
         with open( dic_save + "train.csv" , "a" ) as writefile:
@@ -109,6 +122,19 @@ if __name__  == "__main__":
             append = ",".join( [ str(x) for x in row.values() ] )
             writefile.write( append + "\n" )
 
+    # alpha training
+    datasets_for_alpha_train = load_dataset( "csv" , data_files=dic_sources + "train_queries.csv" )
+    datasets_for_alpha_train = datasets_for_alpha_train['train'].train_test_split( test_size=0.4 , shuffle=True )
+    tmp = 0
+    for row in datasets_for_alpha_train['train']:
+        with open( dic_save + "train_for_alpha_train.csv" , "a" ) as writefile:
+            if tmp == 0:
+                writefile.write( "query_id,query_text,pos_doc_ids,bm25_top1000,bm25_top1000_scores\n" )
+                tmp += 1
+            append = ",".join( [ str(x) for x in row.values() ] )
+            writefile.write( append + "\n" )
+
+    # validation
     tmp = 0
     for row in datasets['test']:
         with open( dic_save + "validation.csv" , "a" ) as writefile:
