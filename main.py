@@ -123,13 +123,13 @@ if __name__  == "__main__":
             writefile.write( append + "\n" )
 
     # alpha training
-    datasets_for_alpha_train = load_dataset( "csv" , data_files=dic_sources + "train_queries.csv" )
+    datasets_for_alpha_train = load_dataset( "csv" , data_files=dic_save + "all.csv" )
     datasets_for_alpha_train = datasets_for_alpha_train['train'].train_test_split( test_size=0.4 , shuffle=True )
     tmp = 0
     for row in datasets_for_alpha_train['train']:
         with open( dic_save + "train_for_alpha_train.csv" , "a" ) as writefile:
             if tmp == 0:
-                writefile.write( "query_id,query_text,pos_doc_ids,bm25_top1000,bm25_top1000_scores\n" )
+                writefile.write( "query_name,query_content,answer,label\n" )
                 tmp += 1
             append = ",".join( [ str(x) for x in row.values() ] )
             writefile.write( append + "\n" )
