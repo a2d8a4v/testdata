@@ -5,6 +5,7 @@
 import glob , os , re , random , sys , math
 import pickle , csv
 import numpy as np
+import pandas as pd
 import collections
 from tqdm import tqdm
 from datasets import load_dataset
@@ -110,7 +111,7 @@ if __name__  == "__main__":
                 random_l = " ".join( random_l )
                 append = ",".join( [ query_name , query_content , random_l , str( index_el ) ] )
                 writefile.write( append + "\n" )
-
+    # train
     datasets = load_dataset( "csv" , data_files=dic_save + "all.csv" )
     datasets = datasets['train'].train_test_split( test_size=0.04 , shuffle=True )
     tmp = 0
@@ -121,19 +122,6 @@ if __name__  == "__main__":
                 tmp += 1
             append = ",".join( [ str(x) for x in row.values() ] )
             writefile.write( append + "\n" )
-
-    # alpha training
-    datasets_for_alpha_train = load_dataset( "csv" , data_files=dic_save + "all.csv" )
-    datasets_for_alpha_train = datasets_for_alpha_train['train'].train_test_split( test_size=0.4 , shuffle=True )
-    tmp = 0
-    for row in datasets_for_alpha_train['train']:
-        with open( dic_save + "train_for_alpha_train.csv" , "a" ) as writefile:
-            if tmp == 0:
-                writefile.write( "query_name,query_content,answer,label\n" )
-                tmp += 1
-            append = ",".join( [ str(x) for x in row.values() ] )
-            writefile.write( append + "\n" )
-
     # validation
     tmp = 0
     for row in datasets['test']:
@@ -145,7 +133,41 @@ if __name__  == "__main__":
             writefile.write( append + "\n" )
 
 
-    # make test data
+    ## alpha training
+    d_list = [ str(x) for x in random.choices( list( pd.read_csv( dic_sources + 'train_queries.csv' )['query_id'] ) , k=60 ) ]
+    t_list = []
+    with open( dic_save + "train_for_alpha_train.csv" , "a" ) as writefile:
+        writefile.write( "query_name,query_content,answer,label\n" )
+        for query_name , query_content in queries_dict.items():
+            if query_name in d_list:
+                positive_list = que_pos_dict[ query_name ].split()
+                for i in range( len( positive_list ) ):
+                    positive = positive_list[ i ]
+                    if len( que_top_dict[ query_name ].keys() ) // len( que_pos_dict[ query_name ].split() ) >= 10:
+                        temp = list( que_top_dict[ query_name ].keys() )[ len( que_top_dict[ query_name ].keys() ) // 2 :]
+                    else:
+                        temp = que_top_dict[ query_name ].keys()
+                    negative = random.choices( [ x for x in temp if x not in que_pos_dict[ query_name ].split() ] , k=3 )
+                    random_l = [ positive ] + negative
+                    random.shuffle( random_l )
+                    index_el = random_l.index( positive )
+                    random_l = " ".join( random_l )
+                    append = ",".join( [ query_name , query_content , random_l , str( index_el ) ] )
+                    t_list.append( append )
+        random.shuffle( t_list )
+        for row in t_list:
+            writefile.write( row + "\n" )
+    pickleStore( d_list , dic_save + "alpha_querys_docs_list.pkl" )
+
+    # datasets_for_alpha_train = load_dataset( "csv" , data_files=dic_save + "all_alpha.csv" ).shuffle()
+    # with open( dic_save + "train_for_alpha_train.csv" , "a" ) as writefile:
+    #     writefile.write( "query_name,query_content,answer,label\n" )
+    #     for row in datasets_for_alpha_train['train']:
+    #         append = ",".join( [ str(x) for x in row.values() ] )
+    #         writefile.write( append + "\n" )
+
+
+    ## make test data
     queries_dict = {}
     que_top_dict = {}
     que_all_list = []
