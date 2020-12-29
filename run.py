@@ -387,15 +387,20 @@ def main():
         )
         trainer.save_model()  # Saves the tokenizer too for easy upload
 
-        output_train_file = os.path.join(training_args.output_dir, "train_results.txt")
-        if trainer.is_world_process_zero():
-            with open(output_train_file, "w") as writer:
-                logger.info("***** Train results *****")
-                for key, value in sorted(train_result.metrics.items()):
-                    logger.info(f"  {key} = {value}")
-                    writer.write(f"{key} = {value}\n")
+        try:
+            print( train_result )
+            output_train_file = os.path.join(training_args.output_dir, "train_results.txt")
+            if trainer.is_world_process_zero():
+                with open(output_train_file, "w") as writer:
+                    logger.info("***** Train results *****")
+                    for key, value in sorted(train_result.metrics.items()):
+                        logger.info(f"  {key} = {value}")
+                        writer.write(f"{key} = {value}\n")
+        except:
+            logger.info("*** An exception occurred: Save train record error ***")
 
-            # Need to save the state, since Trainer.save_model saves only the tokenizer with the model
+        # Need to save the state, since Trainer.save_model saves only the tokenizer with the model
+        if trainer.is_world_process_zero():
             trainer.state.save_to_json(os.path.join(training_args.output_dir, "trainer_state.json"))
 
     # Save Trainer Foreahead
@@ -427,6 +432,10 @@ def main():
         logger.info("*** Predict Test dataset ***")
         trainer_test_result = trainer.predict( test_dataset=tokenized_test_datasets["train"] )
         print( "trainer_test_result type: {}".format( type( trainer_test_result ) ) )
+    except:
+        logger.info("*** An exception occurred: Predict Test error ***")
+
+    try:
         output_test_file = os.path.join( training_args.output_dir , "test_results.txt" )
         if trainer.is_world_process_zero():
             with open(output_test_file, "w") as writer:
@@ -435,7 +444,7 @@ def main():
                     logger.info(f"  {key} = {value}")
                     writer.write(f"{key} = {value}\n") 
     except:
-        logger.info("*** An exception occurred: Predict error ***")
+        logger.info("*** An exception occurred: Test Result print error ***")
 
     try:
         logger.info("*** Save Predict Test Result ***")
@@ -444,8 +453,8 @@ def main():
         logger.info("*** An exception occurred: Save Predict error ***")
 
     # predict for training alpha
-    logger.info("*** Predict for Training Alpha ***")
     try:
+        logger.info("*** Predict for Training Alpha ***")
         alphadata = load_dataset( "csv" , data_files=dic_save + "train_for_alpha_train.csv" )
         tokenized_alpha_datasets = alphadata.map(
             preprocess_function,
@@ -474,10 +483,10 @@ def main():
         logger.info("*** An exception occurred: Predict Alpha error ***")
 
     try:
-        logger.info("*** Save Predict Test Result ***")
+        logger.info("*** Save Predict Alpha Result ***")
         pickleStore( trainer_alpha_result , dic_save + "trainer_alpha_result.pkl" )
     except:
-        logger.info("*** An exception occurred: Save Predict error ***")
+        logger.info("*** An exception occurred: Save Predict alpha error ***")
 
     # calculate documents ranking for test
     logger.info("*** Caculate Reranking Result ***")
@@ -509,8 +518,7 @@ def main():
         que_top_dict = pickleOpen( dic_save + "test_que_top_dict.pkl" )
         for query_name , d_v in que_top_dict.items():
             for doc_name , softmax_score in d_v.items():
-                # new[ query_name ][ doc_name ] = np.log2( save[ query_name ][ doc_name ] + softmax_score )
-                new[ query_name ][ doc_name ] = np.log2( save[ query_name ][ doc_name ] ) + 1.2 * np.log2( softmax_score )
+                new[ query_name ][ doc_name ] = np.log2( save[ query_name ][ doc_name ] ) + 1.15 * np.log2( softmax_score )
         pickleStore( new , dic_save + "test_ques_docs_reranking.pkl" )
 
         with open( dic_save + "test_ques_docs_reranking.csv" , "a" ) as writefile:
